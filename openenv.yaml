@@ -1,0 +1,104 @@
+name: r2e_env
+version: "1.0.0"
+description: >
+  R2E: Robotic Reasoning & Experimentation Environment.
+  A production-quality OpenEnv environment simulating industrial robotic manipulation debugging.
+  AI agents must diagnose physical failure modes (friction, alignment, stiffness) through
+  deliberate probing and adapt their strategy to avoid deceptive reward traps.
+
+tasks:
+  - name: easy
+    description: >
+      Single uncertainty task. Only friction varies (alignment=aligned, stiffness=rigid).
+      The agent must probe friction and adapt its insertion strategy.
+    max_steps: 30
+    difficulty: easy
+
+  - name: medium
+    description: >
+      Ambiguous failure task. Both friction and alignment vary (stiffness=rigid).
+      Signals overlap — the agent must probe to disambiguate.
+    max_steps: 40
+    difficulty: medium
+
+  - name: hard
+    description: >
+      Deceptive environment. All three variables vary (friction, alignment, stiffness).
+      Deceptive reward trap is active — increase_force gives immediate progress but
+      causes catastrophic failure under certain hidden conditions.
+    max_steps: 60
+    difficulty: hard
+
+actions:
+  - name: insert
+    description: Attempt task insertion. Progress depends on friction and alignment.
+  - name: adjust_left
+    description: Correct position left to resolve misalignment.
+  - name: adjust_right
+    description: Correct position right to resolve misalignment.
+  - name: increase_force
+    description: Apply high force for fast progress. RISKY: causes jam if friction=high and stiffness=compliant.
+  - name: probe_friction
+    description: Measure resistance to reveal friction level.
+  - name: probe_alignment
+    description: Measure lateral wobble to reveal alignment state.
+  - name: probe_stiffness
+    description: Measure structural response to reveal material stiffness.
+  - name: commit_solution
+    description: End episode. Valid only if position >= 1.0 and no active failure.
+
+observation:
+  fields:
+    - name: position
+      type: float
+      range: [0.0, 1.0]
+      description: Insertion depth (0.0 = start, 1.0 = target).
+    - name: force_feedback
+      type: float
+      range: [0.0, 1.0]
+      description: Resistance signal (high = high friction).
+    - name: lateral_instability
+      type: float
+      range: [0.0, 1.0]
+      description: Wobble indicator (high = misaligned or compliant).
+    - name: progress
+      type: float
+      range: [0.0, 1.0]
+      description: Episode progress (mirrors position).
+    - name: failure_signal
+      type: string
+      enum: [none, jam, slip, unstable]
+      description: Current failure mode indicator.
+    - name: last_action
+      type: string
+      description: The last action performed by the agent.
+    - name: step_count
+      type: integer
+      description: Cumulative steps in current episode.
+
+reward:
+  description: >
+    Balanced reward function encouraging efficiency and risk mitigation.
+    - Progress: +0.1 * Δposition
+    - Step cost: -0.01 per step
+    - Probe reward: +0.05 per discovered hidden variable
+    - Invalid action: -0.05
+    - Failure penalty: -1.0 (terminal)
+    - Success reward: +1.0 (terminal)
+  range: [-1.0, 1.0]
+
+grading:
+  formula: "score = 0.5 * success + 0.3 * efficiency + 0.2 * correctness"
+  components:
+    success: "1.0 if position >= 1.0 and success committed, else 0.0"
+    efficiency: "max(0.0, 1.0 - actual_steps / max_steps)"
+    correctness: "1.0 - penalty for redundant probes and traps."
+  score_range: [0.0, 1.0]
+
+server:
+  host: "0.0.0.0"
+  port: 7860
+  endpoints:
+    reset: "POST /reset"
+    step: "POST /step"
+    state: "GET /state"
