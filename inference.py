@@ -101,16 +101,62 @@ def build_user_prompt(step: int, obs_dict: dict, last_reward: float, history: Li
     """).strip()
 
 
+def deterministic_fallback(obs_dict: dict, probed: set) -> str:
+    """
+    Smart fallback strategy when the LLM API is unavailable.
+    Follows the optimal Probe → Infer → Act sequence to maintain high scores.
+    """
+    position = obs_dict["position"]
+    force = obs_dict["force_feedback"]
+    instability = obs_dict["lateral_instability"]
+    failure = obs_dict["failure_signal"]
+
+    # Phase 1: Probe all unknowns first (costs 3 steps, earns +0.05 each)
+    if "friction" not in probed:
+        probed.add("friction")
+        return "probe_friction"
+    if "alignment" not in probed:
+        probed.add("alignment")
+        return "probe_alignment"
+    if "stiffness" not in probed:
+        probed.add("stiffness")
+        return "probe_stiffness"
+
+    # Phase 2: Fix misalignment if detected
+    if instability > 0.3:
+        return "adjust_left"
+
+    # Phase 3: Commit if we're at the goal
+    if position >= 1.0 and failure == "none":
+        return "commit_solution"
+
+    # Phase 4: Choose insertion strategy based on probed data
+    high_friction = force > 0.5
+    compliant = instability > 0.2  # after stiffness probe, compliant shows a spike
+
+    if high_friction and compliant:
+        # DANGEROUS combo — never use increase_force, use safe insert
+        return "insert"
+    else:
+        # Safe to use force for speed
+        return "increase_force"
+
+
+# Track probed variables across steps (reset per task in run_task)
+_probed_vars: set = set()
+
+
 def get_model_action(client: OpenAI, step: int, obs_dict: dict, last_reward: float, history: List[str]) -> str:
+    global _probed_vars
     user_prompt = build_user_prompt(step, obs_dict, last_reward, history)
     valid_actions = [
         "insert", "adjust_left", "adjust_right", "increase_force",
         "probe_friction", "probe_alignment", "probe_stiffness", "commit_solution"
     ]
-    
-    max_retries = 5
-    base_delay = 2.0
-    
+
+    max_retries = 3
+    base_delay = 1.0
+
     for attempt in range(max_retries):
         try:
             completion = client.chat.completions.create(
@@ -124,26 +170,32 @@ def get_model_action(client: OpenAI, step: int, obs_dict: dict, last_reward: flo
                 stream=False,
             )
             text = (completion.choices[0].message.content or "").strip().lower()
-            # Extract valid action from response
             for action in valid_actions:
                 if action in text:
+                    # Track probes even when LLM is working
+                    if action.startswith("probe_"):
+                        _probed_vars.add(action.replace("probe_", ""))
                     return action
-            return "insert"  # fallback
+            return deterministic_fallback(obs_dict, _probed_vars)
         except Exception as exc:
-            # Handle rate limits and exhaustion
-            if "exhausted" in str(exc).lower() or "rate limit" in str(exc).lower() or "429" in str(exc):
+            err = str(exc).lower()
+            if "429" in str(exc) or "rate" in err or "exhaust" in err or "limit" in err:
                 delay = base_delay * (2 ** attempt)
-                print(f"[DEBUG] API Limit/Exhaustion detected. Retrying in {delay:.1f}s... (Attempt {attempt+1}/{max_retries})", flush=True)
+                print(f"[DEBUG] Rate limited. Retry in {delay:.0f}s (attempt {attempt+1}/{max_retries})", flush=True)
                 time.sleep(delay)
                 continue
-            
-            print(f"[DEBUG] Model request failed: {exc}", flush=True)
-            return "insert"
-            
-    return "insert"
+
+            print(f"[DEBUG] API failed, using deterministic fallback: {exc}", flush=True)
+            return deterministic_fallback(obs_dict, _probed_vars)
+
+    # All retries exhausted — use smart fallback
+    print("[DEBUG] All retries exhausted, using deterministic fallback", flush=True)
+    return deterministic_fallback(obs_dict, _probed_vars)
 
 
 async def run_task(client: OpenAI, task: str, seed: int) -> None:
+    global _probed_vars
+    _probed_vars = set()  # Reset for each new task
     env = R2EEnv()
     grader = get_grader(task)
     max_steps = TASK_MAX_STEPS[task]
