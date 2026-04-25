@@ -174,9 +174,9 @@ model, tokenizer = FastLanguageModel.from_pretrained(
 )
 model = FastLanguageModel.get_peft_model(
     model,
-    r=16,
+    r=8,                    # reduced from 16 for speed
     target_modules=["q_proj", "v_proj", "k_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-    lora_alpha=32,
+    lora_alpha=16,
     lora_dropout=0.05,
     bias="none",
     use_gradient_checkpointing=True,
@@ -212,7 +212,8 @@ def make_user_msg(st: State, task: str) -> str:
         "Think and choose your action:"
     )
 
-def collect_dataset(n_easy=80, n_medium=60, n_hard=40):
+def collect_dataset(n_easy=15, n_medium=10, n_hard=8):
+    # Small dataset: enough for a clear reward curve, fast to generate
     prompts = []
     for task, n in [("easy", n_easy), ("medium", n_medium), ("hard", n_hard)]:
         max_steps = TASK_MAX_STEPS[task]
@@ -315,26 +316,32 @@ def safety_reward(completions, **kwargs):
 print("Reward functions defined.")
 '''
 
+
 CELL8 = '''\
-# Cell 8: GRPO Training (runtime API detection for cross-version compatibility)
+# Cell 8: GRPO Training — fast config (~15 min on T4)
 from trl import GRPOTrainer, GRPOConfig
 import inspect
 
 grpo_params = set(inspect.signature(GRPOConfig.__init__).parameters.keys())
-print(f"Detected {len(grpo_params)} GRPOConfig parameters in installed TRL version.")
+print(f"Detected {len(grpo_params)} GRPOConfig params in installed TRL version.")
 
-# Build kwargs compatible with whichever TRL version is installed
+# ── Speed optimizations ────────────────────────────────────────────────────
+# num_generations: 2 instead of 4 — halves generation time per step
+# max_steps: 50 — enough to show a clear reward curve in ~15 min on T4
+# max_completion_length: 150 — shorter outputs, faster generation
+# no eval during training — saves memory and time
+
 kwargs = dict(
     output_dir="r2e_grpo_output",
-    num_generations=4,
+    num_generations=2,          # was 4 — biggest speed win
     temperature=0.8,
     learning_rate=2e-5,
     per_device_train_batch_size=1,
-    gradient_accumulation_steps=8,
-    num_train_epochs=3,
+    gradient_accumulation_steps=4,
+    max_steps=50,               # fixed budget instead of num_train_epochs
     warmup_ratio=0.1,
-    logging_steps=5,
-    save_steps=100,
+    logging_steps=2,
+    save_steps=50,
     report_to="none",
     fp16=True,
     seed=42,
@@ -342,18 +349,9 @@ kwargs = dict(
 
 # Completion length param name changed in TRL 0.11
 if "max_completion_length" in grpo_params:
-    kwargs["max_completion_length"] = 300
+    kwargs["max_completion_length"] = 150
 elif "max_new_tokens" in grpo_params:
-    kwargs["max_new_tokens"] = 300
-
-# Eval strategy param renamed in TRL 0.10
-if "eval_strategy" in grpo_params:
-    kwargs["eval_strategy"] = "steps"
-elif "evaluation_strategy" in grpo_params:
-    kwargs["evaluation_strategy"] = "steps"
-
-if "eval_steps" in grpo_params:
-    kwargs["eval_steps"] = 50
+    kwargs["max_new_tokens"] = 150
 
 print(f"Training config: {list(kwargs.keys())}")
 training_args = GRPOConfig(**kwargs)
@@ -364,10 +362,10 @@ trainer = GRPOTrainer(
     reward_funcs=[format_reward, reasoning_reward, safety_reward],
     args=training_args,
     train_dataset=train_ds,
-    eval_dataset=eval_ds,
+    # no eval_dataset — saves memory
 )
 
-print("Starting GRPO training...")
+print("Starting GRPO training (50 steps, ~15 min)...")
 trainer.train()
 print("Training complete!")
 '''
