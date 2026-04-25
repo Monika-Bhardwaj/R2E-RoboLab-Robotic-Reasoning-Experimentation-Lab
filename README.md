@@ -1,12 +1,3 @@
----
-title: R2E RoboLab
-emoji: 🤖
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
-
 # R2E: Robotic Reasoning & Experimentation Environment
 
 [![OpenEnv Compatible](https://img.shields.io/badge/OpenEnv-Compatible-green)](https://github.com/open-env/openenv)
