@@ -54,6 +54,7 @@ We evaluated 5 baseline agents across 50 random seeds.
 
 - **Training logs** are saved in `results/training_log.json`.
 - **Reproducible Notebook:** Run the self-contained `train_r2e_grpo.ipynb` in Colab.
+- **Hackathon Writeup:** [Read the full methodology and narrative in HF_Blog_Post.md](HF_Blog_Post.md)
 
 ---
 
