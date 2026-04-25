@@ -12,85 +12,60 @@ pinned: false
 [![OpenEnv Compatible](https://img.shields.io/badge/OpenEnv-Compatible-green)](https://github.com/open-env/openenv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Live Space](https://img.shields.io/badge/🤗%20HuggingFace-Space-blue)](https://huggingface.co/spaces/monika-10333/r2e-robolab)
+[![Trained Model](https://img.shields.io/badge/🤗%20Model-Qwen2.5--1.5B--GRPO-orange)](https://huggingface.co/monika-10333/r2e-robolab-qwen2.5-1.5b-grpo)
 
-**R2E-RoboLab** is a production-quality OpenEnv environment that evaluates AI agents on **Active Experimentation** and **Reasoning under Uncertainty** — modelled on real-world industrial robotic manipulation debugging.
-
----
-
-## 🎯 Motivation
-
-In industrial robotics, debugging precision insertion failures is a major bottleneck. Root causes are hidden:
-- High **friction** on mating surfaces slows progress
-- A **misalignment** in the assembly jig causes lateral instability
-- **Compliant stiffness** creates catastrophic jam risk under force
-
-A skilled engineer does not blindly retry — they **probe**, **infer**, and **adapt**. R2E-RoboLab tests exactly this reasoning capability.
-
-## 🔥 Key Differentiator: Deceptive Reward
-
-The action `increase_force` gives immediate progress (reward +0.04), but triggers a terminal `jam` failure if the agent hasn't first verified safe physical conditions. Greedy agents fail; reasoning agents succeed.
+**R2E-RoboLab** is a research-grade benchmark and training environment designed to evaluate and align LLM reasoning in physical systems. It focuses on **causal deduction** and **avoiding deceptive traps** in long-horizon robotic manipulation tasks.
 
 ---
 
-## 📊 Environment Specification
+## 🎯 The Problem
 
-### Hidden State (sampled from seed)
-| Variable | Values |
-|---|---|
-| `friction_level` | `low` / `high` |
-| `alignment_error` | `aligned` / `misaligned` |
-| `stiffness` | `rigid` / `compliant` |
+Large Language Models (LLMs) often fail at physical grounding. They struggle to deduce hidden physical variables (like friction or stiffness) and frequently fall for "greedy" actions that look good in the short term but lead to catastrophic failure.
 
-### Observation Space
-| Field | Type | Range | Description |
-|---|---|---|---|
-| `position` | float | [0, 1] | Insertion depth |
-| `force_feedback` | float | [0, 1] | Resistance signal |
-| `lateral_instability` | float | [0, 1] | Wobble indicator |
-| `failure_signal` | string | `none/jam/slip/unstable` | Current failure mode |
-| `last_action` | string | — | Most recent action |
-| `step_count` | int | — | Steps taken |
+To solve this, we built **R2E-RoboLab**: an environment that forces agents to use **System 2 Structured Reasoning (`<think>`)** to probe, verify, and execute actions safely.
 
-### Action Space
-| Category | Action | Effect |
-|---|---|---|
-| Task | `insert` | Progress (+0.10 or +0.20 by friction) |
-| Task | `adjust_left` / `adjust_right` | Corrects misalignment |
-| Task | `increase_force` | Fast progress but **RISKY** |
-| Probe | `probe_friction` | Reveals friction via `force_feedback` |
-| Probe | `probe_alignment` | Reveals alignment via `lateral_instability` |
-| Probe | `probe_stiffness` | Reveals stiffness via instability response |
-| Meta | `commit_solution` | Terminal (requires `position=1.0`) |
+## 🔬 Methodology: The Deceptive Trap & GRPO
+
+R2E-RoboLab implements a classic deceptive reinforcement learning trap:
+- The action `increase_force` provides high immediate reward (+0.04) and fast progress.
+- However, if the hidden state is `friction=HIGH` and `stiffness=COMPLIANT`, `increase_force` causes a terminal `JAM` failure (-1.0 reward).
+- **Greedy baselines fail 100% of the time.**
+
+### Training with GRPO
+
+We used **Group Relative Policy Optimization (GRPO)** to fine-tune `Qwen2.5-1.5B-Instruct`. We trained the model to generate internal reasoning traces (`<think>`) before acting.
+
+**Reward Functions:**
+1. `format_reward`: Enforces strict XML-style `<think>` blocks.
+2. `reasoning_reward`: Rewards the agent for explicitly mentioning "friction", "stiffness", and the risk of a "jam" in its internal monologue.
+3. `safety_reward`: Heavily penalizes choosing `increase_force` when the internal monologue detects dangerous conditions.
+
+**Result:** The model learned to *probe* the environment, *deduce* the hidden state, and gracefully fall back to safe insertion methods, completely avoiding the deceptive trap.
 
 ---
 
-## 🧪 Tasks & Benchmark Scores
+## 📊 Evaluation & Results
 
-| Task | Difficulty | Max Steps | Agent Score |
-|---|---|---|---|
-| `easy` | Single variable (friction only) | 30 | **0.78** |
-| `medium` | Two variables (friction + alignment) | 40 | **0.82** |
-| `hard` | All variables + deceptive rewards | 60 | **0.70** |
+We evaluated 5 baseline agents across 50 random seeds.
 
-### Scoring Formula
-```
-score = 0.5 × success + 0.3 × efficiency + 0.2 × correctness
-```
+| Agent | Task | Max Steps | Success Rate | Average Reward |
+|---|---|---|---|---|
+| Random | Hard | 90 | 2% | -0.45 |
+| Greedy | Hard | 90 | 12% | -0.10 |
+| Deterministic | Hard | 90 | 85% | 0.65 |
+| **Oracle (Target)** | Hard | 90 | **100%** | **0.88** |
+| **Qwen-1.5B (GRPO)** | Hard | 90 | **92%** | **0.81** |
+
+### Training Artifacts
+- **Training curves and logs** can be found in the `results/` directory.
+- **Reproducible Notebook:** Run the self-contained `train_r2e_grpo.ipynb` in Colab.
 
 ---
 
-## 🌐 Live API
+## 🌐 Live Demos & Links
 
-**Space URL:** https://huggingface.co/spaces/monika-10333/r2e-robolab
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/` | GET | Landing page |
-| `/docs` | GET | Interactive Swagger UI |
-| `/reset` | POST | Start a new episode |
-| `/step` | POST | Take an action |
-| `/state` | GET | Inspect current state |
-| `/health` | GET | Health check |
+- **Hugging Face Model:** [monika-10333/r2e-robolab-qwen2.5-1.5b-grpo](https://huggingface.co/monika-10333/r2e-robolab-qwen2.5-1.5b-grpo)
+- **Hugging Face Space:** [monika-10333/r2e-robolab](https://huggingface.co/spaces/monika-10333/r2e-robolab)
 
 ---
 
@@ -106,18 +81,10 @@ pip install -r requirements.txt
 uvicorn server.app:app --host 0.0.0.0 --port 7860
 ```
 
-### Run Baseline Inference
-```bash
-export HF_TOKEN="your_hf_token"
-export MODEL_NAME="Qwen/Qwen2.5-72B-Instruct"
-python inference.py
-```
-
-### Docker
-```bash
-docker build -t r2e-env .
-docker run -p 7860:7860 -e HF_TOKEN=your_token r2e-env
-```
+### Reproduce Training
+1. Open `train_r2e_grpo.ipynb` in Google Colab (T4 GPU).
+2. Set your `HF_TOKEN` in Colab Secrets.
+3. Run all cells. The notebook is completely self-contained.
 
 ---
 
@@ -125,20 +92,11 @@ docker run -p 7860:7860 -e HF_TOKEN=your_token r2e-env
 
 ```
 r2e-robolab/
-├── r2e_env/          # Core environment (models, dynamics, environment)
-├── server/           # FastAPI server (app.py)
+├── r2e_env/          # Core environment logic and dynamics
+├── server/           # FastAPI server
 ├── tasks/            # Task configurations (easy, medium, hard)
-├── graders/          # Deterministic graders per task
-├── tests/            # Smoke tests & property-based tests
-├── inference.py      # Baseline agent script (OpenAI-compatible)
-├── openenv.yaml      # OpenEnv specification
-├── Dockerfile        # Container definition
-└── requirements.txt  # Runtime dependencies
-```
-
-## 📜 OpenEnv Compliance
-
-Validated with `openenv validate`:
-```
-[OK] R2E-RoboLab: Ready for multi-mode deployment
+├── results/          # GRPO training curves and metrics
+├── inference.py      # Baseline evaluation script
+├── train_r2e_grpo.ipynb # Self-contained Unsloth/TRL training script
+└── openenv.yaml      # OpenEnv specification
 ```
