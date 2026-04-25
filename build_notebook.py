@@ -46,7 +46,7 @@ from typing import Dict, Tuple
 TASK_MAX_STEPS = {"easy": 40, "medium": 60, "hard": 90}
 VALID_ACTIONS = [
     "insert", "adjust_left", "adjust_right", "increase_force",
-    "probe_friction", "probe_alignment", "probe_stiffness", "commit_solution",
+    "probe_friction", "probe_alignment", "probe_stiffness", "commit_solution", "retract"
 ]
 
 @dataclass
@@ -111,18 +111,28 @@ def env_step(st: State, h: Hidden, action: str, max_steps: int):
         else:
             r -= 0.05
     elif action == "insert":
-        if st.lateral_instability > 0.5:
-            st.failure_signal = "unstable"; r = -1.0; st.done = True
+        if st.failure_signal == "wedged":
+            r = -0.1
+        elif st.lateral_instability > 0.5:
+            st.failure_signal = "wedged"
+            r = -0.05
         else:
             d = 0.10 if h.friction == "high" else 0.20
             st.position = min(1.0, st.position + d); r += 0.1 * d
     elif action == "increase_force":
-        if h.friction == "high" and h.stiffness == "compliant":
+        if st.failure_signal == "wedged":
+            r = -0.1
+        elif h.friction == "high" and h.stiffness == "compliant":
             st.failure_signal = "jam"; r = -1.0; st.done = True
         elif st.lateral_instability > 0.5:
             st.failure_signal = "unstable"; r = -1.0; st.done = True
         else:
             st.position = min(1.0, st.position + 0.40); r += 0.04
+    elif action == "retract":
+        if st.failure_signal == "wedged":
+            st.failure_signal = "none"
+        else:
+            r = -0.05
     elif action == "commit_solution":
         if st.position >= 1.0 and st.failure_signal == "none":
             r = 1.0; st.done = True
@@ -133,11 +143,18 @@ def env_step(st: State, h: Hidden, action: str, max_steps: int):
     st.step_count += 1
     st.last_action = action
     st.phase = get_phase(st.step_count, max_steps)
+    
+    if action != "commit_solution":
+        r = 0.0 # Sparse reward mode (hard task)
+        
     if st.step_count >= max_steps and not st.done:
         st.done = True
     return st, r, st.done
 
 def oracle_act(st: State, h: Hidden) -> Tuple[str, str]:
+    if st.failure_signal == "wedged":
+        return "retract", "CRITICAL: failure=wedged. I made a mistake inserting while unstable. Retracting to recover."
+        
     k = st.known
     if "friction" not in k:
         return "probe_friction", "I need to measure friction level before applying any force."
@@ -194,7 +211,7 @@ SYSTEM_PROMPT = (
     "Response format:\\n"
     "<think>\\n[your reasoning]\\n</think>\\n"
     "Action: [one of: insert, adjust_left, adjust_right, increase_force, "
-    "probe_friction, probe_alignment, probe_stiffness, commit_solution]\\n\\n"
+    "probe_friction, probe_alignment, probe_stiffness, retract, commit_solution]\\n\\n"
     "CRITICAL: NEVER use increase_force if friction=HIGH and stiffness=COMPLIANT (causes JAM)."
 )
 

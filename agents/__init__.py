@@ -13,6 +13,7 @@ from r2e_env.models import R2EAction, Observation, HiddenState
 VALID_ACTIONS = [
     "insert", "adjust_left", "adjust_right", "increase_force",
     "probe_friction", "probe_alignment", "probe_stiffness", "commit_solution",
+    "retract",
 ]
 
 
@@ -41,6 +42,9 @@ class DeterministicAgent:
     name = "deterministic"
 
     def act(self, obs: Observation, probed: set, **kwargs) -> R2EAction:
+        if obs.is_wedged:
+            return R2EAction(action="retract", reasoning="")
+
         # Phase 1: Probe all unknowns
         if "friction" not in probed:
             probed.add("friction")
@@ -82,6 +86,11 @@ class ReasoningAgent:
                      f"failure={obs.failure_signal}")
 
         known = obs.known_variables
+
+        if obs.is_wedged:
+            lines.append("CRITICAL: failure=wedged. I made a mistake by inserting while unstable.")
+            lines.append("Action plan: retract to un-wedge and recover.")
+            return R2EAction(action="retract", reasoning="\n".join(lines))
 
         if "friction" not in probed:
             lines.append("I have not probed friction yet. Probing is essential before applying force.")
@@ -129,6 +138,9 @@ class OracleAgent:
     def act(self, obs: Observation, probed: set, hidden: HiddenState = None, **kwargs) -> R2EAction:
         if hidden is None:
             return R2EAction(action="insert", reasoning="")
+
+        if obs.is_wedged:
+            return R2EAction(action="retract", reasoning="oracle: wedged, retracting to recover")
 
         # Immediately knows everything — skip probing
         if obs.lateral_instability > 0.3 and hidden.alignment_error.value == "misaligned":

@@ -49,6 +49,7 @@ class Observation(BaseModel):
     phase: str = "investigation"                    # current episode phase
     known_variables: dict[str, str] = {}            # accumulated probe knowledge
     last_reasoning: str = ""                        # last <think> content (truncated)
+    is_wedged: bool = False                         # Mistake recovery state
 
     @field_validator("position", "force_feedback", "lateral_instability", "progress")
     @classmethod
@@ -58,7 +59,7 @@ class Observation(BaseModel):
     @field_validator("failure_signal")
     @classmethod
     def must_be_valid_signal(cls, v: str) -> str:
-        valid = {"none", "jam", "slip", "unstable"}
+        valid = {"none", "jam", "slip", "unstable", "wedged"}
         if v not in valid:
             raise ValueError(f"failure_signal must be one of {valid}, got {v!r}")
         return v
@@ -130,3 +131,4 @@ class TaskConfig(BaseModel):
     investigation_fraction: float = 0.4   # first 40% = investigation
     verification_fraction: float = 0.3    # next 30% = verification
     # execution = remaining 30%
+    sparse_reward_mode: bool = False      # Hackathon Theme #2 mechanics

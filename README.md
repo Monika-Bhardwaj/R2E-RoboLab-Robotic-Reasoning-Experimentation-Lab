@@ -57,7 +57,11 @@ We evaluated 5 baseline agents across 50 random seeds.
 | **Qwen-1.5B (GRPO)** | Hard | 90 | **92%** | **0.81** |
 
 ### Training Artifacts
-- **Training curves and logs** can be found in the `results/` directory.
+
+![Training Reward Curve](results/training_curves.png)
+*Figure 1: GRPO Training Loss and Reward over 50 steps showing clear learning.*
+
+- **Training logs** are saved in `results/training_log.json`.
 - **Reproducible Notebook:** Run the self-contained `train_r2e_grpo.ipynb` in Colab.
 
 ---

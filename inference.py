@@ -55,6 +55,7 @@ SYSTEM_PROMPT = textwrap.dedent("""
     - probe_friction      Reveals friction via force_feedback reading.
     - probe_alignment     Reveals alignment via lateral_instability reading.
     - probe_stiffness     Reveals stiffness via instability spike pattern.
+    - retract             Recovers from a 'wedged' failure state.
     - commit_solution     Terminate episode (only safe when position=1.0 and failure_signal=none).
 
     MANDATORY REASONING PROTOCOL:

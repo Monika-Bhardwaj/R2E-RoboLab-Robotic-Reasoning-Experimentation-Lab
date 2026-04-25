@@ -157,8 +157,12 @@ class DynamicsEngine:
         rc.reasoning_quality = score_reasoning(reasoning, obs, hidden, action)
 
         if action == "insert":
-            if hidden.alignment_error == Alignment.misaligned and next_obs.lateral_instability > 0.3:
-                next_obs.failure_signal = "unstable"
+            if obs.is_wedged:
+                rc.invalid_penalty = -0.1
+            elif hidden.alignment_error == Alignment.misaligned and next_obs.lateral_instability > 0.3:
+                next_obs.is_wedged = True
+                next_obs.failure_signal = "wedged"
+                rc.invalid_penalty = -0.05
             elif hidden.friction_level == Friction.high:
                 delta = 0.10
                 next_obs.position = min(1.0, obs.position + delta)
@@ -176,9 +180,12 @@ class DynamicsEngine:
                 next_obs.lateral_instability = min(1.0, obs.lateral_instability + 0.1)
 
         elif action == "increase_force":
-            delta = 0.40
-            next_obs.position = min(1.0, obs.position + delta)
-            rc.progress_reward = 0.1 * delta  # +0.04
+            if obs.is_wedged:
+                rc.invalid_penalty = -0.1
+            else:
+                delta = 0.40
+                next_obs.position = min(1.0, obs.position + delta)
+                rc.progress_reward = 0.1 * delta  # +0.04
 
             if (
                 hidden.friction_level == Friction.high
@@ -187,6 +194,13 @@ class DynamicsEngine:
             ):
                 next_obs.failure_signal = "jam"
                 rc.failure_penalty = -1.0
+
+        elif action == "retract":
+            if obs.is_wedged:
+                next_obs.is_wedged = False
+                next_obs.failure_signal = "none"
+            else:
+                rc.invalid_penalty = -0.05
 
         elif action == "probe_friction":
             next_obs.force_feedback = 0.9 if hidden.friction_level == Friction.high else 0.2
@@ -227,6 +241,15 @@ class DynamicsEngine:
         next_obs.last_reasoning = reasoning[:200] if reasoning else ""
         next_obs.phase = self.get_phase(next_obs.step_count, task_config)
 
+        if task_config.sparse_reward_mode and action != "commit_solution":
+            # Zero out all intermediate rewards for Super Long-Horizon sparse reward mode
+            rc.progress_reward = 0.0
+            rc.step_penalty = 0.0
+            rc.invalid_penalty = 0.0
+            rc.probe_reward = 0.0
+            # Keep reasoning_quality as an intrinsic signal if desired, or zero it
+            # We'll leave reasoning_quality so GRPO still aligns thought formatting
+            
         return (next_obs, rc)
 
     def is_terminal(self, obs: Observation) -> tuple[bool, str]:

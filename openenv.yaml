@@ -45,6 +45,7 @@ tasks:
       investigation: "steps 1-36 (40%)"
       verification: "steps 37-63 (30%)"
       execution: "steps 64-90 (30%)"
+    sparse_reward_mode: true
 
 actions:
   - name: insert
@@ -65,6 +66,10 @@ actions:
     description: >
       Measure structural response. Compliant stiffness causes a lateral instability spike;
       rigid stiffness reduces instability.
+  - name: retract
+    description: >
+      Mistake recovery action. Un-wedges the component if it became stuck after
+      inserting while unstable.
   - name: commit_solution
     description: End episode. Reward=+1.0 if position>=1.0 and no failure; -1.0 otherwise.
 
@@ -88,7 +93,7 @@ observation:
       description: Episode progress (mirrors position).
     - name: failure_signal
       type: string
-      enum: [none, jam, slip, unstable]
+      enum: [none, jam, slip, unstable, wedged]
       description: Current failure mode.
     - name: last_action
       type: string

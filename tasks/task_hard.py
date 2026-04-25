@@ -8,4 +8,5 @@ HARD_CONFIG = TaskConfig(
     seed_range=(0, 9999),
     investigation_fraction=0.40,
     verification_fraction=0.30,
+    sparse_reward_mode=True,
 )
