@@ -52,8 +52,8 @@ We evaluated 5 baseline agents across 50 random seeds.
 ![Training Reward Curve](results/training_curves.png)
 *Figure 1: GRPO Training Loss and Reward over 50 steps showing clear learning.*
 
-- **Training logs** are saved in `results/training_log.json`.
-- **Reproducible Notebook:** Run the self-contained `train_r2e_grpo.ipynb` in Colab.
+- **Training logs:** Saved in `results/training_log.json`.
+- **Working Training Script (For Judges):** The file [`train_r2e_grpo.ipynb`](train_r2e_grpo.ipynb) is the official Unsloth/TRL training script. It is fully self-contained. You can upload this directly to Google Colab, add an `HF_TOKEN` secret, and hit "Run All" to reproduce the exact model we submitted.
 - **Hackathon Writeup:** [Read the full methodology and narrative in HF_Blog_Post.md](HF_Blog_Post.md)
 
 ---
