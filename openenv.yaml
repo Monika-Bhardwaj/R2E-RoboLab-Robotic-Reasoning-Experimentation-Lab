@@ -1,66 +1,87 @@
 name: r2e_env
-version: "1.0.0"
+version: "2.0.0"
 description: >
-  R2E: Robotic Reasoning & Experimentation Environment.
-  A production-quality OpenEnv environment simulating industrial robotic manipulation debugging.
-  AI agents must diagnose physical failure modes (friction, alignment, stiffness) through
-  deliberate probing and adapt their strategy to avoid deceptive reward traps.
+  R2E-RoboLab v2: Robotic Reasoning & Experimentation Environment.
+  A structured reasoning benchmark for robotic manipulation debugging.
+  AI agents must produce explicit <think> reasoning traces before every action,
+  diagnose hidden physical properties (friction, alignment, stiffness) through
+  deliberate probing, and avoid a deceptive reward trap that punishes greedy behavior.
+  Novel: the environment rewards CORRECT REASONING about physical causality,
+  not just correct actions.
 
 tasks:
   - name: easy
     description: >
-      Single uncertainty task. Only friction varies (alignment=aligned, stiffness=rigid).
-      The agent must probe friction and adapt its insertion strategy.
-    max_steps: 30
+      Single uncertainty. Only friction varies (alignment=aligned, stiffness=rigid).
+      Agent must probe friction, reason about the reading, then insert efficiently.
+    max_steps: 40
     difficulty: easy
+    phase_structure:
+      investigation: "steps 1-14 (35%)"
+      verification: "steps 15-28 (35%)"
+      execution: "steps 29-40 (30%)"
 
   - name: medium
     description: >
-      Ambiguous failure task. Both friction and alignment vary (stiffness=rigid).
-      Signals overlap — the agent must probe to disambiguate.
-    max_steps: 40
+      Ambiguous failure. Friction and alignment vary (stiffness=rigid).
+      Signals overlap — agent must probe both variables and reason about which
+      failure mode is active before acting.
+    max_steps: 60
     difficulty: medium
+    phase_structure:
+      investigation: "steps 1-24 (40%)"
+      verification: "steps 25-42 (30%)"
+      execution: "steps 43-60 (30%)"
 
   - name: hard
     description: >
       Deceptive environment. All three variables vary (friction, alignment, stiffness).
-      Deceptive reward trap is active — increase_force gives immediate progress but
-      causes catastrophic failure under certain hidden conditions.
-    max_steps: 60
+      Deceptive reward trap: increase_force gives fast progress (+0.40) but causes
+      catastrophic jam if friction=HIGH and stiffness=COMPLIANT.
+      Agent must probe all three variables, reason about danger before acting.
+    max_steps: 90
     difficulty: hard
+    phase_structure:
+      investigation: "steps 1-36 (40%)"
+      verification: "steps 37-63 (30%)"
+      execution: "steps 64-90 (30%)"
 
 actions:
   - name: insert
-    description: Attempt task insertion. Progress depends on friction and alignment.
+    description: Attempt task insertion. Progress +0.20 (low friction) or +0.10 (high friction). Fails if misaligned.
   - name: adjust_left
-    description: Correct position left to resolve misalignment.
+    description: Correct position left to resolve misalignment. Reduces lateral_instability.
   - name: adjust_right
-    description: Correct position right to resolve misalignment.
+    description: Correct position right to resolve misalignment. Reduces lateral_instability.
   - name: increase_force
-    description: Apply high force for fast progress. RISKY: causes jam if friction=high and stiffness=compliant.
+    description: >
+      Apply high force for fast progress (+0.40). DECEPTIVE TRAP: causes catastrophic
+      jam (reward=-1.0, done=True) if friction=HIGH and stiffness=COMPLIANT.
   - name: probe_friction
-    description: Measure resistance to reveal friction level.
+    description: Measure resistance. Reveals friction via force_feedback (>0.7=high, <0.3=low).
   - name: probe_alignment
-    description: Measure lateral wobble to reveal alignment state.
+    description: Measure wobble. Reveals alignment via lateral_instability (>0.5=misaligned, <0.2=aligned).
   - name: probe_stiffness
-    description: Measure structural response to reveal material stiffness.
+    description: >
+      Measure structural response. Compliant stiffness causes a lateral instability spike;
+      rigid stiffness reduces instability.
   - name: commit_solution
-    description: End episode. Valid only if position >= 1.0 and no active failure.
+    description: End episode. Reward=+1.0 if position>=1.0 and no failure; -1.0 otherwise.
 
 observation:
   fields:
     - name: position
       type: float
       range: [0.0, 1.0]
-      description: Insertion depth (0.0 = start, 1.0 = target).
+      description: Insertion depth (0.0=start, 1.0=target).
     - name: force_feedback
       type: float
       range: [0.0, 1.0]
-      description: Resistance signal (high = high friction).
+      description: Resistance sensor reading. Reveals friction after probe_friction.
     - name: lateral_instability
       type: float
       range: [0.0, 1.0]
-      description: Wobble indicator (high = misaligned or compliant).
+      description: Wobble indicator. Reveals alignment and stiffness via probes.
     - name: progress
       type: float
       range: [0.0, 1.0]
@@ -68,31 +89,43 @@ observation:
     - name: failure_signal
       type: string
       enum: [none, jam, slip, unstable]
-      description: Current failure mode indicator.
+      description: Current failure mode.
     - name: last_action
       type: string
-      description: The last action performed by the agent.
+      description: Last action taken.
     - name: step_count
       type: integer
-      description: Cumulative steps in current episode.
+      description: Steps used so far.
+    - name: phase
+      type: string
+      enum: [investigation, verification, execution]
+      description: Current episode phase based on step count fraction.
+    - name: known_variables
+      type: object
+      description: Accumulated probe knowledge (e.g. {friction: high, alignment: aligned}).
+    - name: last_reasoning
+      type: string
+      description: Truncated last <think> reasoning trace (max 200 chars).
 
 reward:
   description: >
-    Balanced reward function encouraging efficiency and risk mitigation.
-    - Progress: +0.1 * Δposition
-    - Step cost: -0.01 per step
-    - Probe reward: +0.05 per discovered hidden variable
+    Multi-component reward function encouraging efficient probing and correct reasoning.
+    - Progress: +0.1 * Δposition per step
+    - Step cost: -0.01 per step (time pressure)
+    - Probe bonus: +0.05 first time each hidden variable is revealed
     - Invalid action: -0.05
-    - Failure penalty: -1.0 (terminal)
-    - Success reward: +1.0 (terminal)
+    - Failure: -1.0 (terminal: jam or slip)
+    - Success: +1.0 (terminal: commit_solution at position>=1.0)
+    - Reasoning quality: -0.20 to +0.20 per step (Phase 2 addition)
   range: [-1.0, 1.0]
 
 grading:
-  formula: "score = 0.5 * success + 0.3 * efficiency + 0.2 * correctness"
+  formula: "score = 0.40*success + 0.25*efficiency + 0.20*correctness + 0.15*reasoning"
   components:
-    success: "1.0 if position >= 1.0 and success committed, else 0.0"
+    success: "1.0 if position >= 1.0 and commit_solution succeeded, else 0.0"
     efficiency: "max(0.0, 1.0 - actual_steps / max_steps)"
-    correctness: "1.0 - penalty for redundant probes and traps."
+    correctness: "1.0 - 0.1*unnecessary_probes - 0.3*trap_falls"
+    reasoning: "normalized mean of per-step reasoning quality scores, range [0,1]"
   score_range: [0.0, 1.0]
 
 server:
@@ -101,4 +134,6 @@ server:
   endpoints:
     reset: "POST /reset"
     step: "POST /step"
+    step_raw: "POST /step_raw"
     state: "GET /state"
+    health: "GET /health"

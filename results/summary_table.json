@@ -2,22 +2,32 @@
   {
     "agent": "random",
     "task": "easy",
-    "mean_score": 0.5833,
-    "std_score": 0.1792,
-    "success_rate": 0.4,
-    "min_score": 0.3775,
-    "max_score": 0.855,
-    "n_episodes": 5
+    "mean_score": 0.5267,
+    "std_score": 0.1422,
+    "success_rate": 0.26,
+    "min_score": 0.225,
+    "max_score": 0.8938,
+    "n_episodes": 50
+  },
+  {
+    "agent": "random",
+    "task": "medium",
+    "mean_score": 0.5262,
+    "std_score": 0.1094,
+    "success_rate": 0.16,
+    "min_score": 0.3225,
+    "max_score": 0.8392,
+    "n_episodes": 50
   },
   {
     "agent": "random",
     "task": "hard",
-    "mean_score": 0.711,
-    "std_score": 0.1757,
-    "success_rate": 0.6,
-    "min_score": 0.5167,
-    "max_score": 0.8633,
-    "n_episodes": 5
+    "mean_score": 0.539,
+    "std_score": 0.136,
+    "success_rate": 0.16,
+    "min_score": 0.2639,
+    "max_score": 0.8517,
+    "n_episodes": 50
   },
   {
     "agent": "greedy",
@@ -27,17 +37,27 @@
     "success_rate": 1.0,
     "min_score": 0.9,
     "max_score": 0.9,
-    "n_episodes": 5
+    "n_episodes": 50
+  },
+  {
+    "agent": "greedy",
+    "task": "medium",
+    "mean_score": 0.9083,
+    "std_score": 0.0,
+    "success_rate": 1.0,
+    "min_score": 0.9083,
+    "max_score": 0.9083,
+    "n_episodes": 50
   },
   {
     "agent": "greedy",
     "task": "hard",
-    "mean_score": 0.9139,
-    "std_score": 0.0,
-    "success_rate": 1.0,
-    "min_score": 0.9139,
+    "mean_score": 0.7784,
+    "std_score": 0.2091,
+    "success_rate": 0.7,
+    "min_score": 0.4622,
     "max_score": 0.9139,
-    "n_episodes": 5
+    "n_episodes": 50
   },
   {
     "agent": "deterministic",
@@ -47,17 +67,27 @@
     "success_rate": 1.0,
     "min_score": 0.8412,
     "max_score": 0.8412,
-    "n_episodes": 5
+    "n_episodes": 50
+  },
+  {
+    "agent": "deterministic",
+    "task": "medium",
+    "mean_score": 0.8713,
+    "std_score": 0.0042,
+    "success_rate": 1.0,
+    "min_score": 0.8675,
+    "max_score": 0.8758,
+    "n_episodes": 50
   },
   {
     "agent": "deterministic",
     "task": "hard",
-    "mean_score": 0.7794,
-    "std_score": 0.282,
-    "success_rate": 0.8,
+    "mean_score": 0.7468,
+    "std_score": 0.268,
+    "success_rate": 0.76,
     "min_score": 0.275,
     "max_score": 0.9056,
-    "n_episodes": 5
+    "n_episodes": 50
   },
   {
     "agent": "reasoning",
@@ -67,17 +97,27 @@
     "success_rate": 1.0,
     "min_score": 0.845,
     "max_score": 0.845,
-    "n_episodes": 5
+    "n_episodes": 50
+  },
+  {
+    "agent": "reasoning",
+    "task": "medium",
+    "mean_score": 0.8782,
+    "std_score": 0.0013,
+    "success_rate": 1.0,
+    "min_score": 0.8771,
+    "max_score": 0.8796,
+    "n_episodes": 50
   },
   {
     "agent": "reasoning",
     "task": "hard",
-    "mean_score": 0.7853,
-    "std_score": 0.2772,
-    "success_rate": 0.8,
+    "mean_score": 0.762,
+    "std_score": 0.2682,
+    "success_rate": 0.76,
     "min_score": 0.2895,
-    "max_score": 0.9093,
-    "n_episodes": 5
+    "max_score": 0.9153,
+    "n_episodes": 50
   },
   {
     "agent": "oracle",
@@ -87,16 +127,26 @@
     "success_rate": 1.0,
     "min_score": 0.9,
     "max_score": 0.9,
-    "n_episodes": 5
+    "n_episodes": 50
+  },
+  {
+    "agent": "oracle",
+    "task": "medium",
+    "mean_score": 0.9083,
+    "std_score": 0.0,
+    "success_rate": 1.0,
+    "min_score": 0.9083,
+    "max_score": 0.9083,
+    "n_episodes": 50
   },
   {
     "agent": "oracle",
     "task": "hard",
-    "mean_score": 0.9139,
-    "std_score": 0.0,
+    "mean_score": 0.9072,
+    "std_score": 0.0103,
     "success_rate": 1.0,
-    "min_score": 0.9139,
+    "min_score": 0.8917,
     "max_score": 0.9139,
-    "n_episodes": 5
+    "n_episodes": 50
   }
 ]

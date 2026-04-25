@@ -102,24 +102,30 @@ def score_reasoning(
 
 class DynamicsEngine:
     def sample_hidden_state(self, seed: int, task_config: TaskConfig) -> HiddenState:
-        rng = random.Random(seed)
+        import hashlib
+
+        def rng_for(variable: str) -> random.Random:
+            # SHA-256 ensures truly independent seeds per variable
+            h = hashlib.sha256(f"{seed}:{variable}".encode()).hexdigest()
+            return random.Random(int(h[:16], 16))
 
         friction = Friction.low
         alignment = Alignment.aligned
         stiffness = Stiffness.rigid
 
-        if "friction" in task_config.active_variables:
-            friction = rng.choice([Friction.low, Friction.high])
-        if "alignment" in task_config.active_variables:
-            alignment = rng.choice([Alignment.aligned, Alignment.misaligned])
+        if "friction_level" in task_config.active_variables:
+            friction = rng_for("friction").choice([Friction.low, Friction.high])
+        if "alignment_error" in task_config.active_variables:
+            alignment = rng_for("alignment").choice([Alignment.aligned, Alignment.misaligned])
         if "stiffness" in task_config.active_variables:
-            stiffness = rng.choice([Stiffness.rigid, Stiffness.compliant])
+            stiffness = rng_for("stiffness").choice([Stiffness.rigid, Stiffness.compliant])
 
         return HiddenState(
             friction_level=friction,
             alignment_error=alignment,
             stiffness=stiffness,
         )
+
 
     def get_phase(self, step_count: int, task_config: TaskConfig) -> str:
         inv_boundary = int(task_config.max_steps * task_config.investigation_fraction)

@@ -1,8 +1,9 @@
 """
-inference.py — R2E baseline inference script
+inference.py — R2E-RoboLab v2 baseline inference script
 
 Runs all 3 tasks (easy, medium, hard) sequentially using an LLM agent
-and emits structured stdout logs in the required format.
+with MANDATORY structured reasoning (<think>...</think> before every action).
+Emits structured stdout logs in the required [START]/[STEP]/[END] format.
 
 Environment variables:
   API_BASE_URL  LLM endpoint (default: https://router.huggingface.co/v1)
@@ -12,6 +13,7 @@ Environment variables:
 
 import asyncio
 import os
+import re
 import textwrap
 import time
 from typing import List, Optional
@@ -29,38 +31,49 @@ API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
 BENCHMARK = "r2e_env"
 
-TASK_MAX_STEPS = {"easy": 30, "medium": 40, "hard": 60}
+TASK_MAX_STEPS = {"easy": 40, "medium": 60, "hard": 90}
 TASK_SEEDS = {"easy": 42, "medium": 42, "hard": 42}
 
+# ── System prompt ──────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = textwrap.dedent("""
     You are an AI agent controlling a robotic arm performing a precision insertion task.
     Goal: Fully insert the component (position=1.0) and call 'commit_solution'.
 
-    Hidden physical properties you must discover:
-    - friction: affects insertion speed. Probe with 'probe_friction'.
-    - alignment: affects stability. Probe with 'probe_alignment'.
-    - stiffness: affects jam risk. Probe with 'probe_stiffness'.
+    HIDDEN physical properties you must discover through probing:
+    - friction_level: affects insertion speed. Reveal with 'probe_friction'.
+      force_feedback > 0.7 means HIGH friction; < 0.3 means LOW friction.
+    - alignment_error: affects stability. Reveal with 'probe_alignment'.
+      lateral_instability > 0.5 means MISALIGNED; < 0.2 means ALIGNED.
+    - stiffness: affects jam risk. Reveal with 'probe_stiffness'.
+      A spike in lateral_instability after probing means COMPLIANT stiffness.
 
-    Actions:
-    - insert: Progress +0.20 (low friction), +0.10 (high friction). Fails if unstable.
-    - adjust_left / adjust_right: Corrects misalignment (lateral_instability).
-    - increase_force: FAST progress (+0.40) but JAMS if friction=high and stiffness=compliant.
-    - probe_friction: force_feedback: 0.9=high, 0.2=low.
-    - probe_alignment: lateral_instability: 0.8=misaligned, 0.1=aligned.
-    - probe_stiffness: instability spike if compliant.
-    - commit_solution: terminate (only when position=1.0).
+    Available actions:
+    - insert              Progress +0.20 (low friction) or +0.10 (high friction). Fails if unstable.
+    - adjust_left         Correct leftward misalignment.
+    - adjust_right        Correct rightward misalignment.
+    - increase_force      FAST progress (+0.40) but JAMS if friction=HIGH and stiffness=COMPLIANT.
+    - probe_friction      Reveals friction via force_feedback reading.
+    - probe_alignment     Reveals alignment via lateral_instability reading.
+    - probe_stiffness     Reveals stiffness via instability spike pattern.
+    - commit_solution     Terminate episode (only safe when position=1.0 and failure_signal=none).
 
-    CRITICAL STRATEGY:
-    1. ALWAYS probe friction, alignment, and stiffness at the start.
-    2. If lateral_instability > 0.3, use adjust_left or adjust_right until it is 0.1.
-    3. If friction is low OR stiffness is rigid, use 'increase_force' for speed.
-    4. If friction is high AND stiffness is compliant, NEVER use 'increase_force'. Use 'insert'.
-    5. Once position is 1.0, call 'commit_solution'.
+    MANDATORY REASONING PROTOCOL:
+    You MUST think step by step before every action. Output format:
+    <think>
+    [Your reasoning about the current physical state and what action is safe/optimal]
+    </think>
+    Action: [exactly one action name]
 
-    Respond with EXACTLY one action string. No explanation.
+    STRATEGY:
+    1. Always probe friction, alignment, and stiffness in the first 3 steps.
+    2. If lateral_instability > 0.3, use adjust_left or adjust_right.
+    3. NEVER use increase_force if friction=high AND stiffness=compliant (causes JAM).
+    4. Use increase_force only when physical conditions are confirmed safe.
+    5. Once position >= 1.0 and failure_signal=none, call commit_solution.
 """).strip()
 
 
+# ── Logging helpers ─────────────────────────────────────────────────────────────
 def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
@@ -68,7 +81,6 @@ def log_start(task: str, env: str, model: str) -> None:
 def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
     error_val = error if error else "null"
     done_val = str(done).lower()
-    # MANDATORY: Double space after [STEP]
     print(
         f"[STEP]  step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
         flush=True,
@@ -77,83 +89,140 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    # MANDATORY: .2f for score and rewards
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}", flush=True)
+    print(
+        f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}",
+        flush=True,
+    )
 
 
+# ── Prompt builder ──────────────────────────────────────────────────────────────
 def build_user_prompt(step: int, obs_dict: dict, last_reward: float, history: List[str]) -> str:
-    history_block = "\n".join(history[-4:]) if history else "None"
+    known = obs_dict.get("known_variables", {})
+    known_str = ", ".join(f"{k}={v}" for k, v in known.items()) if known else "none yet"
+    phase = obs_dict.get("phase", "investigation")
+    history_block = "\n".join(history[-5:]) if history else "None"
+
     return textwrap.dedent(f"""
-        Step: {step}
+        Step {step} | Phase: {phase}
+
         Current observation:
-          position: {obs_dict['position']:.3f}
-          force_feedback: {obs_dict['force_feedback']:.3f}
+          position:            {obs_dict['position']:.3f}
+          force_feedback:      {obs_dict['force_feedback']:.3f}
           lateral_instability: {obs_dict['lateral_instability']:.3f}
-          failure_signal: {obs_dict['failure_signal']}
-          last_action: {obs_dict['last_action']}
-          step_count: {obs_dict['step_count']}
-        Last reward: {last_reward:.2f}
+          failure_signal:      {obs_dict['failure_signal']}
+          last_action:         {obs_dict['last_action']}
+
+        Known physical properties: {known_str}
+        Last reward: {last_reward:.3f}
 
         Recent history:
         {history_block}
 
-        Choose your next action:
+        Think carefully, then choose your action:
     """).strip()
 
 
-def deterministic_fallback(obs_dict: dict, probed: set) -> str:
-    """
-    Smart fallback strategy when the LLM API is unavailable.
-    Follows the optimal Probe → Infer → Act sequence to maintain high scores.
-    """
+# ── LLM response parser ─────────────────────────────────────────────────────────
+def parse_llm_response(raw: str) -> tuple[str, str]:
+    """Extract <think> reasoning and Action: from raw LLM response."""
+    think_match = re.search(r"<think>(.*?)</think>", raw, re.DOTALL | re.IGNORECASE)
+    reasoning = think_match.group(1).strip() if think_match else ""
+
+    action_match = re.search(r"\bAction:\s*([a-z_]+)", raw, re.IGNORECASE)
+    if action_match:
+        return reasoning, action_match.group(1).strip().lower()
+
+    # Fallback: find any valid action name in the response
+    valid = [
+        "commit_solution", "increase_force", "probe_friction",
+        "probe_alignment", "probe_stiffness", "adjust_left",
+        "adjust_right", "insert",
+    ]
+    for action in valid:
+        if action in raw.lower():
+            return reasoning, action
+
+    return reasoning, "probe_friction"
+
+
+# ── Deterministic fallback (used when API fails) ────────────────────────────────
+def build_fallback_reasoning(obs_dict: dict, probed: set) -> str:
+    """Build a reasoning trace for the deterministic fallback action."""
+    lines = []
+    pos = obs_dict["position"]
+    force = obs_dict["force_feedback"]
+    instability = obs_dict["lateral_instability"]
+    failure = obs_dict["failure_signal"]
+    known = obs_dict.get("known_variables", {})
+
+    lines.append(f"[Fallback reasoning] position={pos:.2f}, force={force:.2f}, instability={instability:.2f}")
+
+    if "friction" not in probed:
+        lines.append("Friction not probed yet. Must probe before applying force.")
+    elif "alignment" not in probed:
+        lines.append(f"Friction known={known.get('friction','?')}. Alignment not probed yet.")
+    elif "stiffness" not in probed:
+        lines.append(f"Friction={known.get('friction','?')}, alignment={known.get('alignment','?')}. Checking stiffness.")
+    elif instability > 0.3:
+        lines.append(f"lateral_instability={instability:.2f} > 0.3 indicates misalignment. Adjusting.")
+    elif pos >= 1.0 and failure == "none":
+        lines.append("Position=1.0 and no failure. Committing solution.")
+    else:
+        high_friction = force > 0.5
+        compliant = known.get("stiffness") == "compliant"
+        if high_friction and compliant:
+            lines.append("HIGH FRICTION + COMPLIANT detected. increase_force is DANGEROUS. Using safe insert.")
+        else:
+            lines.append("Physical conditions safe. Using increase_force for efficiency.")
+
+    return "\n".join(lines)
+
+
+_probed_vars: set = set()
+
+
+def deterministic_fallback(obs_dict: dict, probed: set) -> tuple[str, str]:
+    """Returns (reasoning, action)."""
     position = obs_dict["position"]
     force = obs_dict["force_feedback"]
     instability = obs_dict["lateral_instability"]
     failure = obs_dict["failure_signal"]
+    known = obs_dict.get("known_variables", {})
 
-    # Phase 1: Probe all unknowns first (costs 3 steps, earns +0.05 each)
+    reasoning = build_fallback_reasoning(obs_dict, probed)
+
     if "friction" not in probed:
         probed.add("friction")
-        return "probe_friction"
+        return reasoning, "probe_friction"
     if "alignment" not in probed:
         probed.add("alignment")
-        return "probe_alignment"
+        return reasoning, "probe_alignment"
     if "stiffness" not in probed:
         probed.add("stiffness")
-        return "probe_stiffness"
-
-    # Phase 2: Fix misalignment if detected
+        return reasoning, "probe_stiffness"
     if instability > 0.3:
-        return "adjust_left"
-
-    # Phase 3: Commit if we're at the goal
+        return reasoning, "adjust_left"
     if position >= 1.0 and failure == "none":
-        return "commit_solution"
+        return reasoning, "commit_solution"
 
-    # Phase 4: Choose insertion strategy based on probed data
     high_friction = force > 0.5
-    compliant = instability > 0.2  # after stiffness probe, compliant shows a spike
-
+    compliant = known.get("stiffness") == "compliant"
     if high_friction and compliant:
-        # DANGEROUS combo — never use increase_force, use safe insert
-        return "insert"
-    else:
-        # Safe to use force for speed
-        return "increase_force"
+        return reasoning, "insert"
+    return reasoning, "increase_force"
 
 
-# Track probed variables across steps (reset per task in run_task)
-_probed_vars: set = set()
-
-
-def get_model_action(client: OpenAI, step: int, obs_dict: dict, last_reward: float, history: List[str]) -> str:
+# ── LLM action getter ───────────────────────────────────────────────────────────
+def get_model_action(
+    client: OpenAI,
+    step: int,
+    obs_dict: dict,
+    last_reward: float,
+    history: List[str],
+) -> tuple[str, str]:
+    """Returns (reasoning, action). Falls back to deterministic if API fails."""
     global _probed_vars
     user_prompt = build_user_prompt(step, obs_dict, last_reward, history)
-    valid_actions = [
-        "insert", "adjust_left", "adjust_right", "increase_force",
-        "probe_friction", "probe_alignment", "probe_stiffness", "commit_solution"
-    ]
-
     max_retries = 3
     base_delay = 1.0
 
@@ -165,18 +234,18 @@ def get_model_action(client: OpenAI, step: int, obs_dict: dict, last_reward: flo
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": user_prompt},
                 ],
-                temperature=0.0,
-                max_tokens=20,
+                temperature=0.7,
+                max_tokens=300,   # enough for <think> + Action:
                 stream=False,
             )
-            text = (completion.choices[0].message.content or "").strip().lower()
-            for action in valid_actions:
-                if action in text:
-                    # Track probes even when LLM is working
-                    if action.startswith("probe_"):
-                        _probed_vars.add(action.replace("probe_", ""))
-                    return action
-            return deterministic_fallback(obs_dict, _probed_vars)
+            raw = (completion.choices[0].message.content or "").strip()
+            reasoning, action = parse_llm_response(raw)
+
+            if action.startswith("probe_"):
+                _probed_vars.add(action.replace("probe_", ""))
+
+            return reasoning, action
+
         except Exception as exc:
             err = str(exc).lower()
             if "429" in str(exc) or "rate" in err or "exhaust" in err or "limit" in err:
@@ -185,17 +254,18 @@ def get_model_action(client: OpenAI, step: int, obs_dict: dict, last_reward: flo
                 time.sleep(delay)
                 continue
 
-            print(f"[DEBUG] API failed, using deterministic fallback: {exc}", flush=True)
+            print(f"[DEBUG] API failed (attempt {attempt+1}): {exc}", flush=True)
             return deterministic_fallback(obs_dict, _probed_vars)
 
-    # All retries exhausted — use smart fallback
     print("[DEBUG] All retries exhausted, using deterministic fallback", flush=True)
     return deterministic_fallback(obs_dict, _probed_vars)
 
 
+# ── Task runner ─────────────────────────────────────────────────────────────────
 async def run_task(client: OpenAI, task: str, seed: int) -> None:
     global _probed_vars
-    _probed_vars = set()  # Reset for each new task
+    _probed_vars = set()
+
     env = R2EEnv()
     grader = get_grader(task)
     max_steps = TASK_MAX_STEPS[task]
@@ -218,8 +288,8 @@ async def run_task(client: OpenAI, task: str, seed: int) -> None:
             if done:
                 break
 
-            action_str = get_model_action(client, step, obs_dict, last_reward, history)
-            action = R2EAction(action=action_str)
+            reasoning, action_str = get_model_action(client, step, obs_dict, last_reward, history)
+            action = R2EAction(action=action_str, reasoning=reasoning)
 
             obs, reward, done, info = await env.step(action)
             obs_dict = obs.model_dump()
@@ -233,8 +303,9 @@ async def run_task(client: OpenAI, task: str, seed: int) -> None:
 
             log_step(step=step, action=action_str, reward=reward, done=done, error=error)
             history.append(
-                f"Step {step}: {action_str} -> reward {reward:+.2f}, "
-                f"pos={obs_dict['position']:.2f}, fail={obs_dict['failure_signal']}"
+                f"Step {step}: {action_str} → reward {reward:+.3f}, "
+                f"pos={obs_dict['position']:.2f}, fail={obs_dict['failure_signal']}, "
+                f"known={obs_dict.get('known_variables', {})}"
             )
 
         # Grade the episode
@@ -243,12 +314,21 @@ async def run_task(client: OpenAI, task: str, seed: int) -> None:
             grade_result = grader.grade(episode_log)
             score = grade_result.score
             success = grade_result.success == 1.0
+            # Print sub-scores for transparency
+            print(
+                f"[GRADE] task={task} success={grade_result.success:.2f} "
+                f"efficiency={grade_result.efficiency:.2f} "
+                f"correctness={grade_result.correctness:.2f} "
+                f"reasoning={grade_result.reasoning_score:.2f}",
+                flush=True,
+            )
 
     finally:
         await env.close()
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
 
+# ── Entry point ─────────────────────────────────────────────────────────────────
 async def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
