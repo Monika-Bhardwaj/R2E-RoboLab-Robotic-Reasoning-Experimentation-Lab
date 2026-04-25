@@ -1,0 +1,715 @@
+{
+  "random": [
+    {
+      "task": "easy",
+      "seed": 0,
+      "agent": "random",
+      "score": 0.8550000000000001,
+      "success": 1.0,
+      "efficiency": 0.8,
+      "correctness": 0.9,
+      "reasoning_score": 0.5,
+      "steps": 8,
+      "revealed_probes": [
+        "friction",
+        "stiffness"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 1,
+      "agent": "random",
+      "score": 0.5187499999999999,
+      "success": 0.0,
+      "efficiency": 0.975,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 1,
+      "revealed_probes": []
+    },
+    {
+      "task": "easy",
+      "seed": 2,
+      "agent": "random",
+      "score": 0.3775,
+      "success": 0.0,
+      "efficiency": 0.65,
+      "correctness": 0.7,
+      "reasoning_score": 0.5,
+      "steps": 14,
+      "revealed_probes": [
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 3,
+      "agent": "random",
+      "score": 0.64625,
+      "success": 1.0,
+      "efficiency": 0.525,
+      "correctness": 0.19999999999999996,
+      "reasoning_score": 0.5,
+      "steps": 19,
+      "revealed_probes": [
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 4,
+      "agent": "random",
+      "score": 0.5187499999999999,
+      "success": 0.0,
+      "efficiency": 0.975,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 1,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 0,
+      "agent": "random",
+      "score": 0.8150000000000001,
+      "success": 1.0,
+      "efficiency": 0.8,
+      "correctness": 0.7,
+      "reasoning_score": 0.5,
+      "steps": 18,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 1,
+      "agent": "random",
+      "score": 0.8633333333333334,
+      "success": 1.0,
+      "efficiency": 0.8333333333333334,
+      "correctness": 0.9,
+      "reasoning_score": 0.5,
+      "steps": 15,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 2,
+      "agent": "random",
+      "score": 0.5222222222222223,
+      "success": 0.0,
+      "efficiency": 0.9888888888888889,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 1,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 3,
+      "agent": "random",
+      "score": 0.8377777777777778,
+      "success": 1.0,
+      "efficiency": 0.8111111111111111,
+      "correctness": 0.8,
+      "reasoning_score": 0.5,
+      "steps": 17,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 4,
+      "agent": "random",
+      "score": 0.5166666666666666,
+      "success": 0.0,
+      "efficiency": 0.9666666666666667,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 3,
+      "revealed_probes": [
+        "friction"
+      ]
+    }
+  ],
+  "greedy": [
+    {
+      "task": "easy",
+      "seed": 0,
+      "agent": "greedy",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "easy",
+      "seed": 1,
+      "agent": "greedy",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "easy",
+      "seed": 2,
+      "agent": "greedy",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "easy",
+      "seed": 3,
+      "agent": "greedy",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "easy",
+      "seed": 4,
+      "agent": "greedy",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 0,
+      "agent": "greedy",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 1,
+      "agent": "greedy",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 2,
+      "agent": "greedy",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 3,
+      "agent": "greedy",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 4,
+      "agent": "greedy",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    }
+  ],
+  "deterministic": [
+    {
+      "task": "easy",
+      "seed": 0,
+      "agent": "deterministic",
+      "score": 0.8412499999999999,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.5,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 1,
+      "agent": "deterministic",
+      "score": 0.8412499999999999,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.5,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 2,
+      "agent": "deterministic",
+      "score": 0.8412499999999999,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.5,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 3,
+      "agent": "deterministic",
+      "score": 0.8412499999999999,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.5,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 4,
+      "agent": "deterministic",
+      "score": 0.8412499999999999,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.5,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 0,
+      "agent": "deterministic",
+      "score": 0.275,
+      "success": 0.0,
+      "efficiency": 0.0,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 90,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 1,
+      "agent": "deterministic",
+      "score": 0.9055555555555554,
+      "success": 1.0,
+      "efficiency": 0.9222222222222223,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 2,
+      "agent": "deterministic",
+      "score": 0.9055555555555554,
+      "success": 1.0,
+      "efficiency": 0.9222222222222223,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 3,
+      "agent": "deterministic",
+      "score": 0.9055555555555554,
+      "success": 1.0,
+      "efficiency": 0.9222222222222223,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 4,
+      "agent": "deterministic",
+      "score": 0.9055555555555554,
+      "success": 1.0,
+      "efficiency": 0.9222222222222223,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    }
+  ],
+  "reasoning": [
+    {
+      "task": "easy",
+      "seed": 0,
+      "agent": "reasoning",
+      "score": 0.845,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.525,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 1,
+      "agent": "reasoning",
+      "score": 0.845,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.525,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 2,
+      "agent": "reasoning",
+      "score": 0.845,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.525,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 3,
+      "agent": "reasoning",
+      "score": 0.845,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.525,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "easy",
+      "seed": 4,
+      "agent": "reasoning",
+      "score": 0.845,
+      "success": 1.0,
+      "efficiency": 0.825,
+      "correctness": 0.8,
+      "reasoning_score": 0.525,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 0,
+      "agent": "reasoning",
+      "score": 0.2895,
+      "success": 0.0,
+      "efficiency": 0.0,
+      "correctness": 1.0,
+      "reasoning_score": 0.5966666666666667,
+      "steps": 90,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 1,
+      "agent": "reasoning",
+      "score": 0.9093055555555555,
+      "success": 1.0,
+      "efficiency": 0.9222222222222223,
+      "correctness": 1.0,
+      "reasoning_score": 0.525,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 2,
+      "agent": "reasoning",
+      "score": 0.9093055555555555,
+      "success": 1.0,
+      "efficiency": 0.9222222222222223,
+      "correctness": 1.0,
+      "reasoning_score": 0.525,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 3,
+      "agent": "reasoning",
+      "score": 0.9093055555555555,
+      "success": 1.0,
+      "efficiency": 0.9222222222222223,
+      "correctness": 1.0,
+      "reasoning_score": 0.525,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    },
+    {
+      "task": "hard",
+      "seed": 4,
+      "agent": "reasoning",
+      "score": 0.9093055555555555,
+      "success": 1.0,
+      "efficiency": 0.9222222222222223,
+      "correctness": 1.0,
+      "reasoning_score": 0.525,
+      "steps": 7,
+      "revealed_probes": [
+        "friction",
+        "stiffness",
+        "alignment"
+      ]
+    }
+  ],
+  "oracle": [
+    {
+      "task": "easy",
+      "seed": 0,
+      "agent": "oracle",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "easy",
+      "seed": 1,
+      "agent": "oracle",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "easy",
+      "seed": 2,
+      "agent": "oracle",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "easy",
+      "seed": 3,
+      "agent": "oracle",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "easy",
+      "seed": 4,
+      "agent": "oracle",
+      "score": 0.8999999999999999,
+      "success": 1.0,
+      "efficiency": 0.9,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 0,
+      "agent": "oracle",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 1,
+      "agent": "oracle",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 2,
+      "agent": "oracle",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 3,
+      "agent": "oracle",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    },
+    {
+      "task": "hard",
+      "seed": 4,
+      "agent": "oracle",
+      "score": 0.913888888888889,
+      "success": 1.0,
+      "efficiency": 0.9555555555555556,
+      "correctness": 1.0,
+      "reasoning_score": 0.5,
+      "steps": 4,
+      "revealed_probes": []
+    }
+  ]
+}

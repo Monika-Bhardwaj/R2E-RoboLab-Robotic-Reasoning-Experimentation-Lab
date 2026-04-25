@@ -1,0 +1,102 @@
+[
+  {
+    "agent": "random",
+    "task": "easy",
+    "mean_score": 0.5833,
+    "std_score": 0.1792,
+    "success_rate": 0.4,
+    "min_score": 0.3775,
+    "max_score": 0.855,
+    "n_episodes": 5
+  },
+  {
+    "agent": "random",
+    "task": "hard",
+    "mean_score": 0.711,
+    "std_score": 0.1757,
+    "success_rate": 0.6,
+    "min_score": 0.5167,
+    "max_score": 0.8633,
+    "n_episodes": 5
+  },
+  {
+    "agent": "greedy",
+    "task": "easy",
+    "mean_score": 0.9,
+    "std_score": 0.0,
+    "success_rate": 1.0,
+    "min_score": 0.9,
+    "max_score": 0.9,
+    "n_episodes": 5
+  },
+  {
+    "agent": "greedy",
+    "task": "hard",
+    "mean_score": 0.9139,
+    "std_score": 0.0,
+    "success_rate": 1.0,
+    "min_score": 0.9139,
+    "max_score": 0.9139,
+    "n_episodes": 5
+  },
+  {
+    "agent": "deterministic",
+    "task": "easy",
+    "mean_score": 0.8412,
+    "std_score": 0.0,
+    "success_rate": 1.0,
+    "min_score": 0.8412,
+    "max_score": 0.8412,
+    "n_episodes": 5
+  },
+  {
+    "agent": "deterministic",
+    "task": "hard",
+    "mean_score": 0.7794,
+    "std_score": 0.282,
+    "success_rate": 0.8,
+    "min_score": 0.275,
+    "max_score": 0.9056,
+    "n_episodes": 5
+  },
+  {
+    "agent": "reasoning",
+    "task": "easy",
+    "mean_score": 0.845,
+    "std_score": 0.0,
+    "success_rate": 1.0,
+    "min_score": 0.845,
+    "max_score": 0.845,
+    "n_episodes": 5
+  },
+  {
+    "agent": "reasoning",
+    "task": "hard",
+    "mean_score": 0.7853,
+    "std_score": 0.2772,
+    "success_rate": 0.8,
+    "min_score": 0.2895,
+    "max_score": 0.9093,
+    "n_episodes": 5
+  },
+  {
+    "agent": "oracle",
+    "task": "easy",
+    "mean_score": 0.9,
+    "std_score": 0.0,
+    "success_rate": 1.0,
+    "min_score": 0.9,
+    "max_score": 0.9,
+    "n_episodes": 5
+  },
+  {
+    "agent": "oracle",
+    "task": "hard",
+    "mean_score": 0.9139,
+    "std_score": 0.0,
+    "success_rate": 1.0,
+    "min_score": 0.9139,
+    "max_score": 0.9139,
+    "n_episodes": 5
+  }
+]
