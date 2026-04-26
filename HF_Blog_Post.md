@@ -1,6 +1,5 @@
 ---
 title: "Teaching Small Models Physical Causality: Using GRPO to Avoid Deceptive Traps in Robotics"
-thumbnail: "https://huggingface.co/monika-10333/r2e-robolab-qwen2.5-1.5b-grpo/resolve/main/results/training_curves.png"
 tags:
   - openenv
   - reinforcement-learning
